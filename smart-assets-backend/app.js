@@ -2,8 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const http = require('http'); // Required for Socket.IO
-const { Server } = require('socket.io'); // Import Socket.IO
+const http = require('http');
+const { Server } = require('socket.io');
 const videoRoutes = require('./routes/videoRoutes');
 const path = require('path');
 
@@ -16,7 +16,7 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const io = new Server(server, {
     cors: {
-        origin: '*', // Allow requests from all origins (adjust as needed)
+        origin: '*', // Allow all origins (adjust in production)
         methods: ['GET', 'POST'],
     },
 });
@@ -24,9 +24,7 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads')); // Serve static files from "uploads" folder
-
-// Serve static files from "processed" inside the "uploads" folder
+app.use('/uploads', express.static('uploads'));
 app.use('/processed', express.static(path.join(__dirname, 'uploads', 'processed')));
 
 // MongoDB Connection
@@ -38,8 +36,13 @@ mongoose
     .then(() => console.log('MongoDB connected successfully!'))
     .catch((err) => console.error('MongoDB Connection Error:', err));
 
-// Routes (pass `io` to routes so they can emit events)
+// Routes
 app.use('/api/videos', videoRoutes(io));
+
+// Health Check Endpoint
+app.get('/health', (req, res) => {
+    res.status(200).send('Server is running!');
+});
 
 // Start Server
 const PORT = process.env.PORT || 5000;

@@ -7,16 +7,15 @@ const VideoListPlayer = () => {
     const [loading, setLoading] = useState(true); // Loading state for fetching videos
     const [error, setError] = useState(null); // Error state
 
-    // Get the backend URL from the environment variable
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'; // Default to localhost if not set
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
-    // Fetch processed videos on component mount
     useEffect(() => {
         const fetchVideos = async () => {
             try {
-                const response = await axios.get(`${backendUrl}/api/videos`); // Backend endpoint
-                setVideos(response.data); // Save videos to state
-                setLoading(false); // Stop loading
+                const response = await axios.get(`${backendUrl}/api/videos`);
+                console.log(response.data); // Debug API response
+                setVideos(Array.isArray(response.data) ? response.data : []); // Ensure videos is always an array
+                setLoading(false);
             } catch (err) {
                 console.error('Error fetching videos:', err);
                 setError('Failed to load videos. Please try again later.');
@@ -31,14 +30,12 @@ const VideoListPlayer = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-10 px-6 sm:px-8">
             <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">Processed Videos</h1>
 
-            {/* Error Message */}
             {error && (
                 <div className="text-red-600 text-center mb-6">
                     {error}
                 </div>
             )}
 
-            {/* Video List */}
             <div className="bg-white shadow-lg rounded-lg p-6 max-w-4xl mx-auto">
                 {loading ? (
                     <p className="text-gray-500 text-center">Loading videos...</p>
@@ -70,7 +67,6 @@ const VideoListPlayer = () => {
                 )}
             </div>
 
-            {/* Video Player */}
             {selectedVideo && (
                 <div className="mt-10 bg-white shadow-lg rounded-lg p-6 max-w-4xl mx-auto">
                     <h2 className="text-2xl font-semibold text-gray-800 mb-4">
