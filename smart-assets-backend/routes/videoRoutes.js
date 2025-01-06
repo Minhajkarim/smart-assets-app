@@ -97,8 +97,14 @@ module.exports = (io) => {
 
                 // Parse the final Python script output
                 try {
-                    const processedVideoPath = path.join(__dirname, '../processed', `${filename}`);
-                    const publicProcessedPath = `/processed/${filename}`; // Relative URL for the processed video
+                    // Ensure the videos folder exists
+                    const videosDir = path.join(__dirname, '../videos');
+                    if (!fs.existsSync(videosDir)) {
+                        fs.mkdirSync(videosDir, { recursive: true });
+                    }
+
+                    const processedVideoPath = path.join(videosDir, `${filename}`);
+                    const publicProcessedPath = `/videos/${filename}`; // Relative URL for the processed video
 
                     // Update video document in MongoDB
                     video.status = 'processed';
@@ -147,8 +153,8 @@ module.exports = (io) => {
     });
 
     // Serve processed video files with Range support
-    router.get('/processed/:filename', (req, res) => {
-        const filePath = path.join(__dirname, '..', 'processed', req.params.filename);
+    router.get('/videos/:filename', (req, res) => {
+        const filePath = path.join(__dirname, '..', 'videos', req.params.filename);
 
         if (!fs.existsSync(filePath)) {
             return res.status(404).send({ error: 'File not found.' });

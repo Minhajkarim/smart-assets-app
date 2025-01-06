@@ -26,6 +26,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 app.use('/processed', express.static(path.join(__dirname, 'uploads', 'processed')));
+app.use('/videos', express.static(path.join(__dirname, 'videos'))); // Expose videos folder
 
 // MongoDB Connection
 mongoose
