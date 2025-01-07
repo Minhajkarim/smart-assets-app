@@ -2,9 +2,25 @@ import cv2
 import numpy as np
 import yaml
 from yaml.loader import SafeLoader
+import logging
+
 
 class YOLO_Pred:
-    def __init__(self, onnx_model, data_yaml, conf_thresh=0.4, class_thresh=0.25):
+    def __init__(self, onnx_model, data_yaml, conf_thresh=0.4, class_thresh=0.25, use_cuda=False):
+        """
+        YOLOv5 Prediction Class.
+
+        Args:
+            onnx_model (str): Path to the ONNX model.
+            data_yaml (str): Path to the YAML file with class names and configuration.
+            conf_thresh (float): Confidence threshold for detections.
+            class_thresh (float): Class score threshold for detections.
+            use_cuda (bool): Whether to use GPU acceleration.
+        """
+        # Set up logging
+        logging.basicConfig(level=logging.INFO, filename='yolo_pred.log', filemode='a',
+                            format='%(asctime)s - %(levelname)s - %(message)s')
+
         # Load YAML
         with open(data_yaml, mode='r') as f:
             data_yaml = yaml.load(f, Loader=SafeLoader)
@@ -15,15 +31,49 @@ class YOLO_Pred:
         self.class_thresh = class_thresh  # Class score threshold
 
         # Load YOLO model
-        self.yolo = cv2.dnn.readNetFromONNX(onnx_model)
-        self.yolo.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-        self.yolo.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+        try:
+            self.yolo = cv2.dnn.readNetFromONNX(onnx_model)
+            if use_cuda:
+                self.yolo.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+                self.yolo.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+                logging.info("Using GPU acceleration.")
+            else:
+                self.yolo.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+                self.yolo.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+                logging.info("Using CPU for inference.")
+        except Exception as e:
+            logging.error(f"Error loading YOLO model: {str(e)}")
+            raise RuntimeError(f"Failed to load YOLO model: {str(e)}")
 
         # Generate consistent colors for classes
         np.random.seed(10)
         self.colors = np.random.randint(100, 255, size=(self.nc, 3)).tolist()
 
+    def update_thresholds(self, conf_thresh=None, class_thresh=None):
+        """
+        Update detection thresholds dynamically.
+
+        Args:
+            conf_thresh (float): New confidence threshold.
+            class_thresh (float): New class score threshold.
+        """
+        if conf_thresh is not None:
+            self.conf_thresh = conf_thresh
+            logging.info(f"Updated confidence threshold to {conf_thresh}.")
+        if class_thresh is not None:
+            self.class_thresh = class_thresh
+            logging.info(f"Updated class score threshold to {class_thresh}.")
+
     def predictions(self, image):
+        """
+        Run predictions on a single image.
+
+        Args:
+            image (np.ndarray): Input image.
+
+        Returns:
+            np.ndarray: Processed image with bounding boxes and labels.
+        """
         try:
             # Ensure valid input dimensions
             row, col, d = image.shape
@@ -90,10 +140,17 @@ class YOLO_Pred:
             return image
 
         except Exception as e:
-            # If an error occurs, return the original frame for continuity
-            print(f"Error processing frame: {str(e)}")
+            logging.error(f"Error processing frame: {str(e)}")
             return image
 
     def generate_colors(self, ID):
-        # Generate consistent colors (pre-generated during init)
+        """
+        Generate consistent colors for classes.
+
+        Args:
+            ID (int): Class ID.
+
+        Returns:
+            tuple: RGB color for the class.
+        """
         return tuple(self.colors[ID])

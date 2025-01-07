@@ -12,7 +12,7 @@ is_live_stream = input_source.lower() == 'live'
 output_dir = 'videos'
 os.makedirs(output_dir, exist_ok=True)
 
-# Initialize YOLO model
+# Initialize YOLO model as a singleton
 model_path = 'models/best.onnx'
 data_yaml = 'models/data.yaml'
 
@@ -27,10 +27,7 @@ except Exception as e:
     sys.exit(1)
 
 # Video source: live stream or uploaded video
-if is_live_stream:
-    cap = cv2.VideoCapture(0)  # Capture from webcam (index 0)
-else:
-    cap = cv2.VideoCapture(input_source)  # Capture from the file
+cap = cv2.VideoCapture(0) if is_live_stream else cv2.VideoCapture(input_source)
 
 if not cap.isOpened():
     error_message = {
@@ -42,7 +39,7 @@ if not cap.isOpened():
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
-# Get video properties (use default for live streams)
+# Get video properties (use defaults for live streams)
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS)) if not is_live_stream else 30
@@ -53,7 +50,9 @@ if is_live_stream:
     output_video_path = os.path.join(output_dir, 'live_output.mp4')
 else:
     file_extension = os.path.splitext(input_source)[1]
-    output_video_path = os.path.join(output_dir, os.path.basename(input_source).replace(file_extension, '-output' + file_extension))
+    output_video_path = os.path.join(
+        output_dir, os.path.basename(input_source).replace(file_extension, '-output' + file_extension)
+    )
 
 out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
 
