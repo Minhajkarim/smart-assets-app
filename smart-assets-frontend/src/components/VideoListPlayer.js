@@ -54,9 +54,17 @@ const VideoListPlayer = () => {
                                         Play Video
                                     </button>
                                     <a
-                                        href={`${backendUrl}${video.processedPath}`}
-                                        download={video.filename}
-                                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300"
+                                        href={video.processedPath ? `${backendUrl}${video.processedPath}` : '#'}
+                                        download={video.processedPath ? video.processedPath.split('/').pop() : ''}
+                                        className={`bg-green-600 text-white px-4 py-2 rounded-lg ${
+                                            video.processedPath ? 'hover:bg-green-700 focus:ring-2 focus:ring-green-300' : 'opacity-50 cursor-not-allowed'
+                                        }`}
+                                        onClick={(e) => {
+                                            if (!video.processedPath) {
+                                                e.preventDefault();
+                                                alert('Processed video is not available for download.');
+                                            }
+                                        }}
                                     >
                                         Download
                                     </a>
@@ -70,7 +78,7 @@ const VideoListPlayer = () => {
             {selectedVideo && (
                 <div className="mt-10 bg-white shadow-lg rounded-lg p-6 max-w-4xl mx-auto">
                     <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                        Now Playing: {selectedVideo.filename}
+                        Now Playing: {selectedVideo.processedPath ? selectedVideo.processedPath.split('/').pop() : 'Unknown'}
                     </h2>
                     <video
                         width="100%"

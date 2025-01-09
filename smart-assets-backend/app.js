@@ -6,27 +6,37 @@ const http = require('http');
 const { Server } = require('socket.io');
 const videoRoutes = require('./routes/videoRoutes');
 const path = require('path');
+const Video = require('./models/Video'); // Import Video model to save the processed path
 
+// Load environment variables
 dotenv.config();
+
+// Initialize Express app
 const app = express();
 
-// Create HTTP Server
+// Create HTTP server for Express
 const server = http.createServer(app);
 
 // Initialize Socket.IO
 const io = new Server(server, {
     cors: {
-        origin: '*', // Allow all origins (adjust in production)
-        methods: ['GET', 'POST'],
+        origin: ['http://localhost:3000', 'https://psd.smartassets.ae/'], // Replace with your frontend domains
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
     },
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://psd.smartassets.ae/'], // Replace with your frontend domains
+    credentials: true,
+}));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
-app.use('/processed', express.static(path.join(__dirname, 'uploads', 'processed')));
-app.use('/videos', express.static(path.join(__dirname, 'videos'))); // Expose videos folder
+
+// Serve static files
+app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
+app.use('/processed', express.static(path.resolve(__dirname, 'uploads', 'processed')));
+app.use('/videos', express.static(path.resolve(__dirname, 'smart-assets-backend/videos'))); // Expose videos folder
 
 // MongoDB Connection
 mongoose
@@ -35,7 +45,10 @@ mongoose
         useUnifiedTopology: true,
     })
     .then(() => console.log('MongoDB connected successfully!'))
-    .catch((err) => console.error('MongoDB Connection Error:', err));
+    .catch((err) => {
+        console.error('MongoDB Connection Error:', err);
+        process.exit(1); // Exit if MongoDB connection fails
+    });
 
 // Routes
 app.use('/api/videos', videoRoutes(io));
@@ -43,6 +56,28 @@ app.use('/api/videos', videoRoutes(io));
 // Health Check Endpoint
 app.get('/health', (req, res) => {
     res.status(200).send('Server is running!');
+});
+
+// Socket.IO Listeners
+io.on('connection', (socket) => {
+    console.log(`Client connected: ${socket.id}`);
+
+    // Listen for frame data and simulate object detection (for testing)
+    socket.on('frameData', (data) => {
+        console.log('Frame data received:', data);
+
+        // Emit a simulated object detection result (replace with actual logic)
+        socket.emit('objectDetection', {
+            objects: [
+                { label: 'Person', x: 100, y: 150, width: 50, height: 100 },
+            ],
+        });
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log(`Client disconnected: ${socket.id}`);
+    });
 });
 
 // Start Server

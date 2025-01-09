@@ -3,7 +3,11 @@ import cv2
 import sys
 import os
 import json
+import logging
 from YOLO_Pred import YOLO_Pred
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Check if the input is a file or a stream
 input_source = sys.argv[1]
@@ -23,6 +27,7 @@ except Exception as e:
         'progress': 100,
         'message': f'Error initializing YOLO model: {str(e)}'
     }
+    logging.error(error_message['message'])
     print(json.dumps(error_message))
     sys.exit(1)
 
@@ -34,6 +39,7 @@ if not cap.isOpened():
         'progress': 100,
         'message': 'Error: Unable to open video source. Please check the input.'
     }
+    logging.error(error_message['message'])
     print(json.dumps(error_message))
     sys.exit(1)
 
@@ -46,17 +52,10 @@ fps = int(cap.get(cv2.CAP_PROP_FPS)) if not is_live_stream else 30
 frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if not is_live_stream else -1
 
 # Output video path
-if is_live_stream:
-    output_video_path = os.path.join(output_dir, 'live_output.mp4')
-else:
-    file_extension = os.path.splitext(input_source)[1]
-    output_video_path = os.path.join(
-        output_dir, os.path.basename(input_source).replace(file_extension, '-output' + file_extension)
-    )
-
+file_extension = os.path.splitext(input_source)[1]
+output_video_path = os.path.join(output_dir, os.path.basename(input_source).replace(file_extension, f'-output{file_extension}'))
 out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
 
-# Process video frame by frame
 frame_num = 0
 last_reported_progress = 0
 
@@ -71,12 +70,12 @@ try:
         # Process the frame using YOLO model
         processed_frame = yolo_model.predictions(frame)
 
-        # Check for valid processed frame
         if processed_frame is None:
             error_message = {
                 'progress': 100,
                 'message': f'Error processing frame {frame_num}. Skipping.'
             }
+            logging.warning(error_message['message'])
             print(json.dumps(error_message))
             continue
 
@@ -87,7 +86,7 @@ try:
         if not is_live_stream and frame_count > 0:
             frame_num += 1
             progress = int((frame_num / frame_count) * 100)
-            if progress - last_reported_progress >= 10:  # Report every 10%
+            if progress - last_reported_progress >= 10:
                 progress_update = {
                     'progress': progress,
                     'message': f'Processing frame {frame_num}/{frame_count}'
@@ -100,14 +99,15 @@ except Exception as e:
         'progress': 100,
         'message': f'An error occurred during processing: {str(e)}'
     }
+    logging.error(error_message['message'])
     print(json.dumps(error_message))
 finally:
-    # Release resources
     cap.release()
     out.release()
 
 # Final output path
 output_video_info = {
-    'output_video': output_video_path
+    'output_video': output_video_path  # This includes the correct -output suffix
 }
 print(json.dumps(output_video_info))  # Send the final output video path to the backend
+sys.exit(0)

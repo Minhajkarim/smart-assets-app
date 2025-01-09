@@ -32,6 +32,9 @@ module.exports = (io) => {
 
             const videoPath = path.resolve(req.file.path);
             const filename = req.file.filename;
+            const fileExtension = path.extname(filename);
+            const baseFilename = path.basename(filename, fileExtension);
+            const processedFilename = `${baseFilename}-output${fileExtension}`;
 
             console.log('Uploaded video path:', videoPath);
 
@@ -95,7 +98,6 @@ module.exports = (io) => {
 
                 console.log('Python script finished successfully.');
 
-                // Parse the final Python script output
                 try {
                     // Ensure the videos folder exists
                     const videosDir = path.join(__dirname, '../videos');
@@ -103,8 +105,9 @@ module.exports = (io) => {
                         fs.mkdirSync(videosDir, { recursive: true });
                     }
 
-                    const processedVideoPath = path.join(videosDir, `${filename}`);
-                    const publicProcessedPath = `/videos/${filename}`; // Relative URL for the processed video
+                    // Path to the processed video file
+                    const processedVideoPath = path.join(videosDir, processedFilename);
+                    const publicProcessedPath = `/videos/${processedFilename}`; // Relative URL for the processed video
 
                     // Update video document in MongoDB
                     video.status = 'processed';
