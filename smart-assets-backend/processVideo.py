@@ -7,7 +7,8 @@ import logging
 from YOLO_Pred import YOLO_Pred
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Check if the input is a file or a stream
 input_source = sys.argv[1]
@@ -43,18 +44,23 @@ if not cap.isOpened():
     print(json.dumps(error_message))
     sys.exit(1)
 
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+# fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+fourcc = cv2.VideoWriter_fourcc(*'avc1')
+
 
 # Get video properties (use defaults for live streams)
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS)) if not is_live_stream else 30
-frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if not is_live_stream else -1
+frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)
+                  ) if not is_live_stream else -1
 
 # Output video path
 file_extension = os.path.splitext(input_source)[1]
-output_video_path = os.path.join(output_dir, os.path.basename(input_source).replace(file_extension, f'-output{file_extension}'))
-out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+output_video_path = os.path.join(output_dir, os.path.basename(
+    input_source).replace(file_extension, f'-output{file_extension}'))
+out = cv2.VideoWriter(output_video_path, fourcc, fps,
+                      (frame_width, frame_height))
 
 frame_num = 0
 last_reported_progress = 0
@@ -109,5 +115,6 @@ finally:
 output_video_info = {
     'output_video': output_video_path  # This includes the correct -output suffix
 }
-print(json.dumps(output_video_info))  # Send the final output video path to the backend
+# Send the final output video path to the backend
+print(json.dumps(output_video_info))
 sys.exit(0)
